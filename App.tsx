@@ -57,6 +57,7 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [selectedLead, setSelectedLead] = useState<Prospeccao | null>(null);
 
   // Estados para o novo comportamento do sidebar
   const [sidebarPinned, setSidebarPinned] = useState(false);
@@ -425,12 +426,13 @@ const App: React.FC = () => {
                         </td>
                         <td className="py-6 px-4">
                           <div className="flex flex-col gap-1.5 max-w-[200px]">
-                            <CopyToClipboard
-                              text={item.nome || ''}
-                              label={item.nome || 'S/ Nome'}
-                              type="Nome"
-                              className="text-slate-900 font-black text-[14px] leading-tight hover:text-blue-600 transition-colors truncate"
-                            />
+                            <button
+                              onClick={() => setSelectedLead(item)}
+                              title={item.nome || 'S/ Nome'}
+                              className="text-slate-900 font-black text-[14px] leading-tight hover:text-blue-600 transition-colors truncate text-left cursor-pointer"
+                            >
+                              {item.nome || 'S/ Nome'}
+                            </button>
                             {(item.email || item.email2) && (
                               <div className="space-y-1 mt-1">
                                 {item.email && (
@@ -572,6 +574,116 @@ const App: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Detalhes da Empresa */}
+      {selectedLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/40 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden animate-in slide-in-from-bottom-12">
+            <div className="px-8 py-8 bg-slate-900 text-white relative overflow-hidden">
+              <button
+                onClick={() => setSelectedLead(null)}
+                className="absolute top-6 right-6 p-2 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              <h3 className="text-xl font-black tracking-tight pr-10 leading-tight">
+                {selectedLead.nome || 'Empresa sem nome'}
+              </h3>
+              {selectedLead.segmento && (
+                <div className="flex items-center gap-2 mt-3">
+                  <Tag className="w-3.5 h-3.5 text-blue-400" />
+                  <span className="text-blue-400 text-sm font-bold uppercase tracking-wider">{selectedLead.segmento}</span>
+                </div>
+              )}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-3xl -mr-10 -mt-10 rounded-full"></div>
+            </div>
+
+            <div className="p-8 space-y-5">
+              {/* Telefone */}
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-green-50 rounded-xl text-green-600 border border-green-100">
+                  <Phone className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Telefone</p>
+                  <CopyToClipboard
+                    text={selectedLead.telefone}
+                    type="Telefone"
+                    className="text-slate-900 font-black font-mono text-lg hover:text-green-600 transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Emails */}
+              {(selectedLead.email || selectedLead.email2) && (
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-blue-50 rounded-xl text-blue-600 border border-blue-100">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">E-mail</p>
+                    {selectedLead.email && (
+                      <CopyToClipboard
+                        text={selectedLead.email}
+                        type="Email"
+                        className="text-slate-700 font-bold text-sm hover:text-blue-600 transition-colors block"
+                      />
+                    )}
+                    {selectedLead.email2 && (
+                      <CopyToClipboard
+                        text={selectedLead.email2}
+                        type="Email"
+                        className="text-slate-500 font-medium text-sm hover:text-blue-600 transition-colors block mt-1"
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Localização */}
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-slate-100 rounded-xl text-slate-600 border border-slate-200">
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Localização</p>
+                  <p className="text-slate-900 font-bold capitalize">{selectedLead.cidade || 'Cidade não informada'}</p>
+                  <p className="text-slate-500 text-sm">{selectedLead.bairro || 'Bairro não informado'}</p>
+                </div>
+              </div>
+
+              {/* Website */}
+              {selectedLead.website && (
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-purple-50 rounded-xl text-purple-600 border border-purple-100">
+                    <Globe className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Website</p>
+                    <a
+                      href={selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-purple-600 font-bold text-sm hover:text-purple-800 transition-colors break-all"
+                    >
+                      {selectedLead.website}
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="px-8 pb-8">
+              <button
+                onClick={() => setSelectedLead(null)}
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-black py-4 rounded-2xl transition-all"
+              >
+                FECHAR
+              </button>
+            </div>
           </div>
         </div>
       )}
