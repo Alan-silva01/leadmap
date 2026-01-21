@@ -58,6 +58,7 @@ const App: React.FC = () => {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [selectedLead, setSelectedLead] = useState<Prospeccao | null>(null);
+  const [feedbackModal, setFeedbackModal] = useState<{ show: boolean; type: 'success' | 'error'; message: string }>({ show: false, type: 'success', message: '' });
 
   // Estados para o novo comportamento do sidebar
   const [sidebarPinned, setSidebarPinned] = useState(false);
@@ -104,6 +105,26 @@ const App: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
+  // Realtime subscription para atualizar dados automaticamente
+  useEffect(() => {
+    const channel = supabase
+      .channel('prospeccao-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'prospeccao' },
+        (payload) => {
+          console.log('Realtime update:', payload);
+          // Buscar dados novamente quando houver mudança
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchData]);
+
   const handleWebhookSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTerm || !formCity) return;
@@ -116,10 +137,10 @@ const App: React.FC = () => {
       setShowSearchModal(false);
       setFormTerm('');
       setFormCity('');
-      alert('Automação enviada! Os dados aparecerão em breve.');
+      setFeedbackModal({ show: true, type: 'success', message: 'Automação enviada! Os dados aparecerão em breve.' });
       setTimeout(fetchData, 45000);
     } else {
-      alert('Erro ao disparar automação.');
+      setFeedbackModal({ show: true, type: 'error', message: 'Erro ao disparar automação. Tente novamente.' });
     }
   };
 
@@ -682,6 +703,41 @@ const App: React.FC = () => {
                 className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-black py-4 rounded-2xl transition-all"
               >
                 FECHAR
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Feedback (Sucesso/Erro) */}
+      {feedbackModal.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/40 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2rem] w-full max-w-sm shadow-2xl overflow-hidden animate-in slide-in-from-bottom-12">
+            <div className={`px-8 py-8 ${feedbackModal.type === 'success' ? 'bg-green-600' : 'bg-red-600'} text-white relative overflow-hidden`}>
+              <div className="flex justify-center mb-4">
+                {feedbackModal.type === 'success' ? (
+                  <CheckSquare className="w-16 h-16 opacity-90" />
+                ) : (
+                  <X className="w-16 h-16 opacity-90" />
+                )}
+              </div>
+              <h3 className="text-xl font-black tracking-tight text-center">
+                {feedbackModal.type === 'success' ? 'Sucesso!' : 'Erro'}
+              </h3>
+            </div>
+
+            <div className="p-8">
+              <p className="text-slate-600 text-center text-sm leading-relaxed">
+                {feedbackModal.message}
+              </p>
+            </div>
+
+            <div className="px-8 pb-8">
+              <button
+                onClick={() => setFeedbackModal({ ...feedbackModal, show: false })}
+                className={`w-full ${feedbackModal.type === 'success' ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'} text-white font-black py-4 rounded-2xl transition-all`}
+              >
+                OK
               </button>
             </div>
           </div>
