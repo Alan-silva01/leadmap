@@ -1,10 +1,10 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { 
-  Search, 
-  MapPin, 
-  Download, 
-  Plus, 
+import {
+  Search,
+  MapPin,
+  Download,
+  Plus,
   RefreshCw,
   X,
   Phone,
@@ -20,14 +20,31 @@ import {
   Database,
   Tag,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  LogOut
 } from 'lucide-react';
 import { supabase } from './services/supabase';
 import { triggerSearchWebhook } from './services/webhookService';
 import { Prospeccao } from './types';
 import { CopyToClipboard } from './components/CopyToClipboard';
+import { useAuth } from './contexts/AuthContext';
 
 const APP_LOGO_URL = 'https://ybvkcunddrrqyjffwray.supabase.co/storage/v1/object/public/imagens/Logotipo%20Design%20(1).png';
+
+// Componente de Logout
+const LogoutButton: React.FC<{ sidebarOpen: boolean }> = ({ sidebarOpen }) => {
+  const { signOut } = useAuth();
+
+  return (
+    <button
+      onClick={signOut}
+      className={`w-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all ${!sidebarOpen ? 'px-0' : 'px-4'}`}
+    >
+      <LogOut className="w-4 h-4 shrink-0" />
+      {sidebarOpen && <span className="text-sm animate-in fade-in">Sair</span>}
+    </button>
+  );
+};
 
 const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -40,11 +57,11 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  
+
   // Estados para o novo comportamento do sidebar
   const [sidebarPinned, setSidebarPinned] = useState(false);
   const [sidebarHovered, setSidebarHovered] = useState(false);
-  
+
   const [error, setError] = useState<string | null>(null);
 
   // Search form state
@@ -63,15 +80,15 @@ const App: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (supabaseError) throw supabaseError;
-      
+
       const results = prospeccaoData || [];
       setData(results);
-      
+
       const uniqueCities = Array.from(new Set(results
         .map(item => item.cidade?.trim())
         .filter(Boolean) as string[]))
         .sort((a, b) => a.localeCompare(b, 'pt-BR'));
-      
+
       setCities(uniqueCities);
     } catch (err: any) {
       console.error('LeadMap Error:', err);
@@ -116,20 +133,20 @@ const App: React.FC = () => {
 
   const filteredData = useMemo(() => {
     return data.filter(item => {
-      const matchesCity = selectedCity 
-        ? item.cidade?.trim().toLowerCase() === selectedCity.toLowerCase() 
+      const matchesCity = selectedCity
+        ? item.cidade?.trim().toLowerCase() === selectedCity.toLowerCase()
         : true;
       const matchesSegment = selectedSegment
         ? item.segmento?.trim().toLowerCase() === selectedSegment.toLowerCase()
         : true;
       const search = searchTerm.toLowerCase();
-      const matchesSearch = !searchTerm || 
-        item.nome?.toLowerCase().includes(search) || 
+      const matchesSearch = !searchTerm ||
+        item.nome?.toLowerCase().includes(search) ||
         item.telefone?.includes(search) ||
         item.email?.toLowerCase().includes(search) ||
         item.segmento?.toLowerCase().includes(search) ||
         item.bairro?.toLowerCase().includes(search);
-        
+
       return matchesCity && matchesSegment && matchesSearch;
     });
   }, [data, selectedCity, selectedSegment, searchTerm]);
@@ -188,13 +205,13 @@ const App: React.FC = () => {
   return (
     <div className="flex h-screen overflow-hidden bg-[#f8f9fb] text-slate-900 relative">
       {/* Sidebar Overlay */}
-      <aside 
+      <aside
         onMouseEnter={() => setSidebarHovered(true)}
         onMouseLeave={() => setSidebarHovered(false)}
         className={`fixed top-0 left-0 h-full bg-slate-900 text-white flex flex-col transition-all duration-300 ease-in-out z-40 shadow-2xl ${sidebarOpen ? 'w-80' : 'w-20'}`}
       >
         {/* Toggle de Fixação (Pin) */}
-        <button 
+        <button
           onClick={() => setSidebarPinned(!sidebarPinned)}
           className={`absolute -right-3 top-10 bg-blue-600 text-white rounded-full p-1 shadow-lg hover:bg-blue-500 transition-all z-50 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         >
@@ -221,11 +238,10 @@ const App: React.FC = () => {
               setSelectedSegment(null);
               setSelectedRows(new Set());
             }}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 ${
-              selectedCity === null 
-              ? 'bg-blue-600 text-white shadow-lg' 
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 ${selectedCity === null
+              ? 'bg-blue-600 text-white shadow-lg'
               : 'hover:bg-slate-800 text-slate-400'
-            } ${!sidebarOpen ? 'justify-center' : ''}`}
+              } ${!sidebarOpen ? 'justify-center' : ''}`}
           >
             <Users className="w-5 h-5 shrink-0" />
             {sidebarOpen && <span className="text-sm font-bold animate-in fade-in">Todos os Leads</span>}
@@ -241,24 +257,23 @@ const App: React.FC = () => {
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Localidades</span>
             </div>
           )}
-          
+
           <div className="space-y-1">
             {cities.map(city => (
               <div key={city} className="flex flex-col">
                 <button
                   onClick={() => {
                     if (selectedCity === city && !selectedSegment) {
-                        setSelectedCity(null);
-                        setSelectedSegment(null);
+                      setSelectedCity(null);
+                      setSelectedSegment(null);
                     } else {
-                        setSelectedCity(city);
-                        setSelectedSegment(null);
+                      setSelectedCity(city);
+                      setSelectedSegment(null);
                     }
                     setSelectedRows(new Set());
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                    selectedCity === city ? 'bg-slate-800 text-white font-bold' : 'hover:bg-slate-800/50 text-slate-500'
-                  } ${!sidebarOpen ? 'justify-center' : ''}`}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${selectedCity === city ? 'bg-slate-800 text-white font-bold' : 'hover:bg-slate-800/50 text-slate-500'
+                    } ${!sidebarOpen ? 'justify-center' : ''}`}
                   title={city}
                 >
                   <MapPin className={`w-4 h-4 shrink-0 ${selectedCity === city ? 'text-blue-500' : 'text-slate-600'}`} />
@@ -275,9 +290,8 @@ const App: React.FC = () => {
                         setSelectedSegment(null);
                         setSelectedRows(new Set());
                       }}
-                      className={`w-full text-left text-[11px] py-2 px-3 rounded-lg transition-all ${
-                        selectedSegment === null ? 'text-blue-400 font-bold bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'
-                      }`}
+                      className={`w-full text-left text-[11px] py-2 px-3 rounded-lg transition-all ${selectedSegment === null ? 'text-blue-400 font-bold bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'
+                        }`}
                     >
                       Todos os Segmentos
                     </button>
@@ -288,9 +302,8 @@ const App: React.FC = () => {
                           setSelectedSegment(seg);
                           setSelectedRows(new Set());
                         }}
-                        className={`w-full text-left text-[11px] py-2 px-3 rounded-lg transition-all flex items-center gap-2 ${
-                          selectedSegment === seg ? 'text-blue-400 font-bold bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'
-                        }`}
+                        className={`w-full text-left text-[11px] py-2 px-3 rounded-lg transition-all flex items-center gap-2 ${selectedSegment === seg ? 'text-blue-400 font-bold bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'
+                          }`}
                       >
                         <Tag size={12} className={selectedSegment === seg ? 'text-blue-400' : 'text-slate-600'} />
                         <span className="truncate capitalize">{seg}</span>
@@ -304,14 +317,15 @@ const App: React.FC = () => {
         </nav>
 
         {/* Rodapé Sidebar */}
-        <div className="p-4 border-t border-white/5">
-          <button 
+        <div className="p-4 border-t border-white/5 space-y-2">
+          <button
             onClick={() => setShowSearchModal(true)}
             className={`w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 ${!sidebarOpen ? 'px-0' : 'px-4'}`}
           >
             <Plus className="w-5 h-5 shrink-0" />
             {sidebarOpen && <span className="animate-in fade-in">NOVA BUSCA</span>}
           </button>
+          <LogoutButton sidebarOpen={sidebarOpen} />
         </div>
       </aside>
 
@@ -320,15 +334,15 @@ const App: React.FC = () => {
         <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-10 shrink-0 z-10">
           <div className="flex items-center gap-6 flex-1">
             <div className="flex flex-col">
-                <h2 className="text-xl font-black text-slate-900 tracking-tight capitalize truncate max-w-[300px]">
+              <h2 className="text-xl font-black text-slate-900 tracking-tight capitalize truncate max-w-[300px]">
                 {selectedCity || "Fluxo de Leads"}
-                </h2>
-                {selectedSegment && (
-                    <div className="flex items-center gap-1.5 text-blue-600 text-[10px] font-black uppercase tracking-widest mt-0.5">
-                        <Tag size={10} />
-                        {selectedSegment}
-                    </div>
-                )}
+              </h2>
+              {selectedSegment && (
+                <div className="flex items-center gap-1.5 text-blue-600 text-[10px] font-black uppercase tracking-widest mt-0.5">
+                  <Tag size={10} />
+                  {selectedSegment}
+                </div>
+              )}
             </div>
             <div className="relative max-w-sm w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -411,39 +425,39 @@ const App: React.FC = () => {
                         </td>
                         <td className="py-6 px-4">
                           <div className="flex flex-col gap-1.5 min-w-[220px]">
-                            <CopyToClipboard 
-                              text={item.nome || ''} 
-                              label={item.nome || 'S/ Nome'} 
-                              type="Nome" 
+                            <CopyToClipboard
+                              text={item.nome || ''}
+                              label={item.nome || 'S/ Nome'}
+                              type="Nome"
                               className="text-slate-900 font-black text-[15px] leading-tight hover:text-blue-600 transition-colors"
                             />
                             {(item.email || item.email2) && (
-                                <div className="space-y-1 mt-1">
-                                    {item.email && (
-                                        <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold group">
-                                            <Mail className="w-3 h-3 text-blue-500/60" />
-                                            <CopyToClipboard text={item.email} type="Email" className="hover:text-blue-600 truncate" />
-                                        </div>
-                                    )}
-                                    {item.email2 && (
-                                        <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium group">
-                                            <Mail className="w-3 h-3 text-slate-300" />
-                                            <CopyToClipboard text={item.email2} type="Email" className="hover:text-blue-600 truncate" />
-                                        </div>
-                                    )}
-                                </div>
+                              <div className="space-y-1 mt-1">
+                                {item.email && (
+                                  <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold group">
+                                    <Mail className="w-3 h-3 text-blue-500/60" />
+                                    <CopyToClipboard text={item.email} type="Email" className="hover:text-blue-600 truncate" />
+                                  </div>
+                                )}
+                                {item.email2 && (
+                                  <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium group">
+                                    <Mail className="w-3 h-3 text-slate-300" />
+                                    <CopyToClipboard text={item.email2} type="Email" className="hover:text-blue-600 truncate" />
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
                         </td>
                         <td className="py-6 px-4">
                           <div className="flex items-center gap-2">
-                             <Tag className="w-3.5 h-3.5 text-blue-500/40" />
-                             <CopyToClipboard 
-                                text={item.segmento || ''} 
-                                label={item.segmento || 'Não Definido'} 
-                                type="Segmento" 
-                                className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg border ${item.segmento ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
-                             />
+                            <Tag className="w-3.5 h-3.5 text-blue-500/40" />
+                            <CopyToClipboard
+                              text={item.segmento || ''}
+                              label={item.segmento || 'Não Definido'}
+                              type="Segmento"
+                              className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg border ${item.segmento ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
+                            />
                           </div>
                         </td>
                         <td className="py-6 px-4">
@@ -451,18 +465,18 @@ const App: React.FC = () => {
                             <div className="p-2.5 bg-green-50 rounded-xl text-green-600 border border-green-100 shadow-sm flex items-center justify-center">
                               <Phone className="w-4 h-4" />
                             </div>
-                            <CopyToClipboard 
-                              text={item.telefone} 
-                              type="Telefone" 
-                              className="text-slate-900 font-black font-mono tracking-tighter text-sm hover:text-green-600 transition-colors" 
+                            <CopyToClipboard
+                              text={item.telefone}
+                              type="Telefone"
+                              className="text-slate-900 font-black font-mono tracking-tighter text-sm hover:text-green-600 transition-colors"
                             />
                           </div>
                         </td>
                         <td className="py-6 px-4">
                           <div className="flex flex-col gap-0.5">
                             <div className="flex items-center gap-1.5">
-                                <MapPin size={13} className="text-slate-300" />
-                                <span className="text-slate-800 font-bold text-sm capitalize leading-none">{item.cidade || '-'}</span>
+                              <MapPin size={13} className="text-slate-300" />
+                              <span className="text-slate-800 font-bold text-sm capitalize leading-none">{item.cidade || '-'}</span>
                             </div>
                             <span className="text-slate-400 text-[10px] font-medium truncate max-w-[140px] ml-5 leading-none">{item.bairro || 'Endereço indisponível'}</span>
                           </div>
@@ -470,21 +484,21 @@ const App: React.FC = () => {
                         <td className="py-6 px-4">
                           {item.website ? (
                             <div className="flex items-center gap-2">
-                                <a 
-                                    href={item.website.startsWith('http') ? item.website : `https://${item.website}`} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer" 
-                                    className="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-900 hover:text-white transition-all text-[10px] font-black tracking-widest uppercase shadow-sm group"
-                                >
-                                    <Globe className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-400" />
-                                    Site
-                                </a>
-                                <CopyToClipboard text={item.website} type="Link" className="p-2 hover:bg-slate-100 rounded-xl transition-colors" />
+                              <a
+                                href={item.website.startsWith('http') ? item.website : `https://${item.website}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-900 hover:text-white transition-all text-[10px] font-black tracking-widest uppercase shadow-sm group"
+                              >
+                                <Globe className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-400" />
+                                Site
+                              </a>
+                              <CopyToClipboard text={item.website} type="Link" className="p-2 hover:bg-slate-100 rounded-xl transition-colors" />
                             </div>
                           ) : (
                             <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 text-slate-200 rounded-xl text-[9px] font-black tracking-widest uppercase border border-slate-100/50">
-                                <X size={10} />
-                                Offline
+                              <X size={10} />
+                              Offline
                             </div>
                           )}
                         </td>
@@ -512,35 +526,35 @@ const App: React.FC = () => {
               </button>
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/10 blur-3xl -mr-10 -mt-10 rounded-full"></div>
             </div>
-            
+
             <form onSubmit={handleWebhookSubmit} className="p-10 space-y-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nicho (Ex: Petshops)</label>
                 <div className="relative group">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
-                    <input
-                        required
-                        type="text"
-                        placeholder="Quais estabelecimentos buscar?"
-                        value={formTerm}
-                        onChange={(e) => setFormTerm(e.target.value)}
-                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-5 pl-14 pr-6 focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none transition-all font-bold text-slate-800 placeholder:text-slate-300"
-                    />
+                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
+                  <input
+                    required
+                    type="text"
+                    placeholder="Quais estabelecimentos buscar?"
+                    value={formTerm}
+                    onChange={(e) => setFormTerm(e.target.value)}
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-5 pl-14 pr-6 focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none transition-all font-bold text-slate-800 placeholder:text-slate-300"
+                  />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Cidade Alvo</label>
                 <div className="relative group">
-                    <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
-                    <input
-                        required
-                        type="text"
-                        placeholder="Em qual cidade prospectar?"
-                        value={formCity}
-                        onChange={(e) => setFormCity(e.target.value)}
-                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-5 pl-14 pr-6 focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none transition-all font-bold text-slate-800 placeholder:text-slate-300"
-                    />
+                  <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 w-4 h-4 group-focus-within:text-blue-500 transition-colors" />
+                  <input
+                    required
+                    type="text"
+                    placeholder="Em qual cidade prospectar?"
+                    value={formCity}
+                    onChange={(e) => setFormCity(e.target.value)}
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-5 pl-14 pr-6 focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 outline-none transition-all font-bold text-slate-800 placeholder:text-slate-300"
+                  />
                 </div>
               </div>
 
