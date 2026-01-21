@@ -41,7 +41,7 @@ export const NoAccess: React.FC = () => {
             {/* Logo */}
             <img src={APP_LOGO_URL} alt="LeadMap" className="w-24 h-24 mb-8" />
 
-            <h1 className="text-3xl font-black italic tracking-tighter bg-gradient-to-br from-white to-slate-400 bg-clip-text text-transparent mb-4">
+            <h1 className="text-3xl font-black italic tracking-tight bg-gradient-to-br from-white to-slate-400 bg-clip-text text-transparent mb-4 pb-1">
                 LeadMap
             </h1>
 
