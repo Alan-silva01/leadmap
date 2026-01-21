@@ -40,18 +40,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const fetchProfile = async (userId: string) => {
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
+    const fetchProfile = async (userId: string): Promise<Profile | null> => {
+        try {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
 
-        if (error) {
-            console.error('Erro ao buscar perfil:', error);
+            if (error) {
+                console.error('Erro ao buscar perfil:', error);
+                // Retorna um profile padrão não autorizado em caso de erro
+                return {
+                    id: userId,
+                    email: null,
+                    nome: null,
+                    autorizacao: false,
+                    created_at: new Date().toISOString()
+                };
+            }
+            return data as Profile;
+        } catch (err) {
+            console.error('Erro ao buscar perfil:', err);
             return null;
         }
-        return data as Profile;
     };
 
     useEffect(() => {
@@ -65,6 +77,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 setProfile(profileData);
             }
 
+            setLoading(false);
+        }).catch(() => {
             setLoading(false);
         });
 
