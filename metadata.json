@@ -1,0 +1,6 @@
+
+{
+  "name": "LeadMap",
+  "description": "Plataforma avançada para busca e gestão de leads empresariais por cidade, integrada com Supabase e automação n8n.",
+  "requestFramePermissions": []
+}
