@@ -40,64 +40,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const fetchProfile = async (userId: string): Promise<Profile | null> => {
-        console.log('Fetching profile for user:', userId);
-        try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single();
-
-            console.log('Profile fetch result:', { data, error });
-
-            if (error) {
-                console.error('Erro ao buscar perfil:', error);
-                return null;
-            }
-            return data as Profile;
-        } catch (err) {
-            console.error('Erro ao buscar perfil:', err);
-            return null;
-        }
-    };
-
     useEffect(() => {
         let isMounted = true;
 
-        const initAuth = async () => {
-            console.log('Iniciando auth...');
-            try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                console.log('Session result:', { session, error });
-
-                if (!isMounted) return;
-
-                if (session?.user) {
-                    setSession(session);
-                    setUser(session.user);
-
-                    const profileData = await fetchProfile(session.user.id);
-                    console.log('Profile loaded:', profileData);
-                    if (isMounted) setProfile(profileData);
-                } else {
-                    setSession(null);
-                    setUser(null);
-                    setProfile(null);
-                }
-            } catch (error) {
-                console.error('Erro na inicialização:', error);
-            } finally {
-                if (isMounted) {
-                    console.log('Setting loading to false');
-                    setLoading(false);
-                }
-            }
-        };
-
-        initAuth();
-
-        // Escutar mudanças de auth
+        // Escutar mudanças de auth - incluindo INITIAL_SESSION
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log('Auth state changed:', event, session?.user?.email);
             if (!isMounted) return;
@@ -106,19 +52,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 setSession(session);
                 setUser(session.user);
 
-                const profileData = await fetchProfile(session.user.id);
-                if (isMounted) setProfile(profileData);
+                // Buscar profile de forma síncrona sem await extra
+                console.log('Fetching profile for user:', session.user.id);
+
+                // Usar setTimeout para evitar race condition
+                setTimeout(async () => {
+                    if (!isMounted) return;
+
+                    try {
+                        const { data, error } = await supabase
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', session.user.id)
+                            .single();
+
+                        console.log('Profile fetch result:', { data, error });
+
+                        if (isMounted) {
+                            setProfile(data as Profile || null);
+                            setLoading(false);
+                        }
+                    } catch (err) {
+                        console.error('Erro ao buscar perfil:', err);
+                        if (isMounted) {
+                            setProfile(null);
+                            setLoading(false);
+                        }
+                    }
+                }, 0);
             } else {
                 setSession(null);
                 setUser(null);
                 setProfile(null);
+                setLoading(false);
             }
-
-            setLoading(false);
         });
+
+        // Timeout de segurança
+        const timeout = setTimeout(() => {
+            if (isMounted && loading) {
+                console.warn('Auth timeout - forçando fim do loading');
+                setLoading(false);
+            }
+        }, 8000);
 
         return () => {
             isMounted = false;
+            clearTimeout(timeout);
             subscription.unsubscribe();
         };
     }, []);
