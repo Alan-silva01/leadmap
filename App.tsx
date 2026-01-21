@@ -424,24 +424,24 @@ const App: React.FC = () => {
                           </button>
                         </td>
                         <td className="py-6 px-4">
-                          <div className="flex flex-col gap-1.5 min-w-[220px]">
+                          <div className="flex flex-col gap-1.5 max-w-[200px]">
                             <CopyToClipboard
                               text={item.nome || ''}
                               label={item.nome || 'S/ Nome'}
                               type="Nome"
-                              className="text-slate-900 font-black text-[15px] leading-tight hover:text-blue-600 transition-colors"
+                              className="text-slate-900 font-black text-[14px] leading-tight hover:text-blue-600 transition-colors truncate"
                             />
                             {(item.email || item.email2) && (
                               <div className="space-y-1 mt-1">
                                 {item.email && (
                                   <div className="flex items-center gap-2 text-[11px] text-slate-500 font-bold group">
-                                    <Mail className="w-3 h-3 text-blue-500/60" />
+                                    <Mail className="w-3 h-3 text-blue-500/60 shrink-0" />
                                     <CopyToClipboard text={item.email} type="Email" className="hover:text-blue-600 truncate" />
                                   </div>
                                 )}
                                 {item.email2 && (
                                   <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium group">
-                                    <Mail className="w-3 h-3 text-slate-300" />
+                                    <Mail className="w-3 h-3 text-slate-300 shrink-0" />
                                     <CopyToClipboard text={item.email2} type="Email" className="hover:text-blue-600 truncate" />
                                   </div>
                                 )}
@@ -483,20 +483,17 @@ const App: React.FC = () => {
                         </td>
                         <td className="py-6 px-4">
                           {item.website ? (
-                            <div className="flex items-center gap-2">
-                              <a
-                                href={item.website.startsWith('http') ? item.website : `https://${item.website}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-900 hover:text-white transition-all text-[10px] font-black tracking-widest uppercase shadow-sm group"
-                              >
-                                <Globe className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-400" />
-                                Site
-                              </a>
-                              <CopyToClipboard text={item.website} type="Link" className="p-2 hover:bg-slate-100 rounded-xl transition-colors" />
-                            </div>
+                            <a
+                              href={item.website.startsWith('http') ? item.website : `https://${item.website}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-900 hover:text-white transition-all text-[10px] font-black tracking-widest uppercase shadow-sm group"
+                            >
+                              <Globe className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-400" />
+                              Site
+                            </a>
                           ) : (
-                            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 text-slate-200 rounded-xl text-[9px] font-black tracking-widest uppercase border border-slate-100/50">
+                            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 text-slate-300 rounded-xl text-[9px] font-black tracking-widest uppercase border border-slate-100/50">
                               <X size={10} />
                               Offline
                             </div>
