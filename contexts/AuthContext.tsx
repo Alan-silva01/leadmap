@@ -40,7 +40,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const fetchProfile = async (userId: string, userEmail?: string): Promise<Profile> => {
+    const fetchProfile = async (userId: string): Promise<Profile | null> => {
+        console.log('Fetching profile for user:', userId);
         try {
             const { data, error } = await supabase
                 .from('profiles')
@@ -48,27 +49,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 .eq('id', userId)
                 .single();
 
-            if (error || !data) {
+            console.log('Profile fetch result:', { data, error });
+
+            if (error) {
                 console.error('Erro ao buscar perfil:', error);
-                // Retorna um profile padrão não autorizado em caso de erro
-                return {
-                    id: userId,
-                    email: userEmail || null,
-                    nome: null,
-                    autorizacao: false,
-                    created_at: new Date().toISOString()
-                };
+                return null;
             }
             return data as Profile;
         } catch (err) {
             console.error('Erro ao buscar perfil:', err);
-            return {
-                id: userId,
-                email: userEmail || null,
-                nome: null,
-                autorizacao: false,
-                created_at: new Date().toISOString()
-            };
+            return null;
         }
     };
 
@@ -76,48 +66,51 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         let isMounted = true;
 
         const initAuth = async () => {
+            console.log('Iniciando auth...');
             try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const { data: { session }, error } = await supabase.auth.getSession();
+                console.log('Session result:', { session, error });
 
                 if (!isMounted) return;
 
-                setSession(session);
-                setUser(session?.user ?? null);
-
                 if (session?.user) {
-                    const profileData = await fetchProfile(session.user.id, session.user.email);
+                    setSession(session);
+                    setUser(session.user);
+
+                    const profileData = await fetchProfile(session.user.id);
+                    console.log('Profile loaded:', profileData);
                     if (isMounted) setProfile(profileData);
+                } else {
+                    setSession(null);
+                    setUser(null);
+                    setProfile(null);
                 }
             } catch (error) {
                 console.error('Erro na inicialização:', error);
             } finally {
-                if (isMounted) setLoading(false);
+                if (isMounted) {
+                    console.log('Setting loading to false');
+                    setLoading(false);
+                }
             }
         };
 
-        // Timeout de segurança - garante que loading termine em 5 segundos
-        const timeout = setTimeout(() => {
-            if (isMounted) {
-                console.warn('Auth timeout - forçando fim do loading');
-                setLoading(false);
-            }
-        }, 5000);
-
-        initAuth().finally(() => {
-            clearTimeout(timeout);
-        });
+        initAuth();
 
         // Escutar mudanças de auth
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('Auth state changed:', event, session?.user?.email);
             if (!isMounted) return;
 
-            setSession(session);
-            setUser(session?.user ?? null);
-
             if (session?.user) {
-                const profileData = await fetchProfile(session.user.id, session.user.email);
+                setSession(session);
+                setUser(session.user);
+
+                const profileData = await fetchProfile(session.user.id);
                 if (isMounted) setProfile(profileData);
             } else {
+                setSession(null);
+                setUser(null);
                 setProfile(null);
             }
 
@@ -145,7 +138,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         });
 
         if (!error && data.user) {
-            // Atualizar nome no profile
             await supabase.from('profiles').update({ nome }).eq('id', data.user.id);
         }
 
@@ -155,6 +147,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const signOut = async () => {
         await supabase.auth.signOut();
         setProfile(null);
+        setUser(null);
+        setSession(null);
     };
 
     return (

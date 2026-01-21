@@ -30,11 +30,11 @@ export const AppWrapper: React.FC = () => {
         return <Login onSwitchToSignUp={() => setAuthView('signup')} />;
     }
 
-    // Logado mas não autorizado
-    if (!profile?.autorizacao) {
-        return <NoAccess />;
+    // Se temos usuário e profile carregado com autorizacao true, mostrar app
+    if (profile && profile.autorizacao === true) {
+        return <App />;
     }
 
-    // Logado e autorizado - mostrar app
-    return <App />;
+    // Usuário logado mas sem autorização ou profile não carregado
+    return <NoAccess />;
 };
