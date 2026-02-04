@@ -146,11 +146,19 @@ const App: React.FC = () => {
 
   const citySegments = useMemo(() => {
     if (!selectedCity) return [];
-    const segments = data
-      .filter(item => item.cidade?.trim().toLowerCase() === selectedCity.toLowerCase())
-      .map(item => item.segmento?.trim())
-      .filter(Boolean) as string[];
-    return Array.from(new Set(segments)).sort();
+    const cityData = data.filter(item => item.cidade?.trim().toLowerCase() === selectedCity.toLowerCase());
+    const segmentCounts: Record<string, number> = {};
+
+    cityData.forEach(item => {
+      const seg = item.segmento?.trim();
+      if (seg) {
+        segmentCounts[seg] = (segmentCounts[seg] || 0) + 1;
+      }
+    });
+
+    return Object.entries(segmentCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   }, [data, selectedCity]);
 
   const filteredData = useMemo(() => {
@@ -312,23 +320,29 @@ const App: React.FC = () => {
                         setSelectedSegment(null);
                         setSelectedRows(new Set());
                       }}
-                      className={`w-full text-left text-[11px] py-2 px-3 rounded-lg transition-all ${selectedSegment === null ? 'text-blue-400 font-bold bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'
+                      className={`w-full text-left text-[11px] py-2 px-3 rounded-lg transition-all flex items-center gap-2 ${selectedSegment === null ? 'text-blue-400 font-bold bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'
                         }`}
                     >
-                      Todos os Segmentos
+                      <span className="flex-1">Todos os Segmentos</span>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${selectedSegment === null ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}>
+                        {citySegments.reduce((acc, seg) => acc + seg.count, 0)}
+                      </span>
                     </button>
                     {citySegments.map(seg => (
                       <button
-                        key={seg}
+                        key={seg.name}
                         onClick={() => {
-                          setSelectedSegment(seg);
+                          setSelectedSegment(seg.name);
                           setSelectedRows(new Set());
                         }}
-                        className={`w-full text-left text-[11px] py-2 px-3 rounded-lg transition-all flex items-center gap-2 ${selectedSegment === seg ? 'text-blue-400 font-bold bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'
+                        className={`w-full text-left text-[11px] py-2 px-3 rounded-lg transition-all flex items-center gap-2 ${selectedSegment === seg.name ? 'text-blue-400 font-bold bg-blue-500/5' : 'text-slate-500 hover:text-slate-300'
                           }`}
                       >
-                        <Tag size={12} className={selectedSegment === seg ? 'text-blue-400' : 'text-slate-600'} />
-                        <span className="truncate capitalize">{seg}</span>
+                        <Tag size={12} className={selectedSegment === seg.name ? 'text-blue-400' : 'text-slate-600'} />
+                        <span className="truncate capitalize flex-1">{seg.name}</span>
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${selectedSegment === seg.name ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}>
+                          {seg.count}
+                        </span>
                       </button>
                     ))}
                   </div>
